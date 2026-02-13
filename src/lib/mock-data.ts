@@ -18,6 +18,8 @@ export interface SpendingRule {
   timeLockRange: [number, number]; // [startHour, endHour]
 }
 
+export type SpendingRuleWithId = SpendingRule & { id: string };
+
 export const MOCK_TRANSACTIONS: Transaction[] = [
   { id: '1', category: 'Food Delivery', amount: 450, merchant: 'Swiggy', date: new Date(Date.now() - 1 * 86400000).toISOString(), status: 'completed' },
   { id: '2', category: 'Shopping', amount: 2500, merchant: 'Amazon', date: new Date(Date.now() - 2 * 86400000).toISOString(), status: 'completed' },

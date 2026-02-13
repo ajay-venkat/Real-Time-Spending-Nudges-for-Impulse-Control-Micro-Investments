@@ -33,11 +33,9 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { Transaction, SpendingRule } from "@/lib/mock-data";
+import { Transaction, SpendingRuleWithId } from "@/lib/mock-data";
 import { db } from "@/lib/local-storage";
 import { calculateCategorySpending } from "@/lib/transaction-engine";
-
-type SpendingRuleWithId = SpendingRule & { id: string };
 
 export default function DashboardPage() {
   const [mounted, setMounted] = useState(false);
@@ -235,9 +233,11 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-slate-900">
-                {Math.floor((transactions.filter((t) => t.status !== "completed").length /
-                  Math.max(transactions.length, 1)) *
-                  100)}
+                {transactions.length > 0 
+                  ? Math.floor((transactions.filter((t) => t.status !== "completed").length /
+                      transactions.length) *
+                      100)
+                  : 0}
                 %
               </div>
               <p className="text-xs text-slate-500 mt-1">

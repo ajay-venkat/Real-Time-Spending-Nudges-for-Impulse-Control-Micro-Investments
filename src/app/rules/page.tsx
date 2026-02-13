@@ -26,12 +26,12 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Plus, Settings2, Trash2, Clock, TrendingUp, Bell } from "lucide-react";
-import { SpendingRule } from "@/lib/mock-data";
+import { SpendingRule, SpendingRuleWithId } from "@/lib/mock-data";
 import { db } from "@/lib/local-storage";
 import { calculateCategorySpending } from "@/lib/transaction-engine";
 import { toast } from "sonner";
 
-type SpendingRuleWithId = SpendingRule & { id: string };
+type SpendingRuleForm = SpendingRule;
 
 export default function RulesPage() {
   const [rules, setRules] = useState<SpendingRuleWithId[]>([]);

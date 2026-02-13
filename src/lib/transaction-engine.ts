@@ -1,7 +1,7 @@
 'use client';
 
 import { db } from './local-storage';
-import { Transaction, SpendingRule } from './mock-data';
+import { Transaction, SpendingRuleWithId } from './mock-data';
 import { personalizedSpendingNudges } from '@/ai/flows/personalized-spending-nudges';
 import { intelligentMicroInvestmentRedirect } from '@/ai/flows/intelligent-micro-investment-redirect-flow';
 
@@ -21,7 +21,7 @@ export function calculateCategorySpending(category: string): number {
  * @param transactionDate The date of the transaction
  * @returns true if transaction is within the blocked time range
  */
-export function checkTimeLock(rule: SpendingRule, transactionDate: Date): boolean {
+export function checkTimeLock(rule: SpendingRuleWithId, transactionDate: Date): boolean {
   if (!rule.timeLockEnabled) {
     return false;
   }
@@ -39,12 +39,19 @@ export function checkTimeLock(rule: SpendingRule, transactionDate: Date): boolea
 }
 
 /**
+ * Update a rule's current spending value in localStorage
+ */
+function updateRuleSpending(ruleId: string, amount: number): void {
+  db.updateDoc('rules', ruleId, { current: amount });
+}
+
+/**
  * Process a new transaction against spending rules
  * @param transaction The transaction to process
  * @returns The processed transaction with updated status and amounts
  */
 export async function processTransaction(transaction: Transaction): Promise<Transaction> {
-  const rules = db.getCollection('rules') as (SpendingRule & { id: string })[];
+  const rules = db.getCollection('rules') as SpendingRuleWithId[];
   const rule = rules.find((r) => r.category === transaction.category);
 
   if (!rule) {
@@ -108,9 +115,7 @@ export async function processTransaction(transaction: Transaction): Promise<Tran
     }
 
     db.addDoc('transactions', transaction);
-    
-    // Update rule's current spending
-    db.updateDoc('rules', rule.id, { current: currentSpending });
+    updateRuleSpending(rule.id, currentSpending);
     
     return transaction;
   } else if (percentageUsed > 80) {
@@ -118,14 +123,15 @@ export async function processTransaction(transaction: Transaction): Promise<Tran
     transaction.status = 'pending';
 
     try {
+      const recentTransactions = db.getCollection('transactions') as Transaction[];
       const nudge = await personalizedSpendingNudges({
         transactionAmount: transaction.amount,
         category: transaction.category,
         currentSpending: currentSpending,
         limit: rule.limit,
-        recentTransactions: db.getCollection('transactions')
+        recentTransactions: recentTransactions
           .slice(-5)
-          .map((t: any) => ({
+          .map((t) => ({
             category: t.category,
             amount: t.amount,
             merchant: t.merchant,
@@ -138,18 +144,14 @@ export async function processTransaction(transaction: Transaction): Promise<Tran
     }
 
     db.addDoc('transactions', transaction);
-    
-    // Update rule's current spending
-    db.updateDoc('rules', rule.id, { current: projectedSpending });
+    updateRuleSpending(rule.id, projectedSpending);
     
     return transaction;
   } else {
     // Within limit - allow transaction
     transaction.status = 'completed';
     db.addDoc('transactions', transaction);
-    
-    // Update rule's current spending
-    db.updateDoc('rules', rule.id, { current: projectedSpending });
+    updateRuleSpending(rule.id, projectedSpending);
     
     return transaction;
   }
@@ -159,12 +161,12 @@ export async function processTransaction(transaction: Transaction): Promise<Tran
  * Update all rules with current spending amounts from transactions
  */
 export function updateRulesWithCurrentSpending(): void {
-  const rules = db.getCollection('rules') as (SpendingRule & { id: string })[];
+  const rules = db.getCollection('rules') as SpendingRuleWithId[];
   
   rules.forEach((rule) => {
     const currentSpending = calculateCategorySpending(rule.category);
     if (rule.current !== currentSpending) {
-      db.updateDoc('rules', rule.id, { current: currentSpending });
+      updateRuleSpending(rule.id, currentSpending);
     }
   });
 }
