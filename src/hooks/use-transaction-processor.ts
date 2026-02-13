@@ -18,7 +18,7 @@ export function useTransactionProcessor() {
     setError(null);
     try {
       const txn: Transaction = {
-        id: '', // will be assigned by processTransaction
+        id: '', // Empty id - will be assigned by db.addDoc() in processTransaction
         category: data.category,
         amount: data.amount,
         merchant: data.merchant,

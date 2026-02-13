@@ -124,6 +124,8 @@ export async function processTransaction(transaction: Transaction): Promise<Tran
         spendingLimit: rule.limit,
         transactionAmount: transaction.amount,
         transactionCategory: transaction.category,
+        // Map MOCK_INVESTMENT_OPTIONS to match the AI flow schema
+        // (expectedReturn -> potentialReturn)
         investmentOpportunities: MOCK_INVESTMENT_OPTIONS.map(o => ({
           name: o.name,
           description: o.description,
@@ -175,7 +177,7 @@ export async function addNewTransaction(data: {
   merchant: string;
 }): Promise<Transaction> {
   const transaction: Transaction = {
-    id: '',
+    id: '', // Empty id - will be assigned by db.addDoc() in processTransaction
     category: data.category,
     amount: data.amount,
     merchant: data.merchant,
