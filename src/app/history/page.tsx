@@ -2,202 +2,263 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Navigation } from "@/components/Navigation";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { AppLayout } from "@/components/AppLayout";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
-import { MOCK_TRANSACTIONS } from "@/lib/mock-data";
-import { format } from "date-fns";
-import { Search, Filter, History as HistoryIcon, AlertCircle, CheckCircle2, Ban } from "lucide-react";
+import {
+  ArrowUpRight,
+  ArrowDownRight,
+  Filter,
+  Search,
+  AlertCircle,
+  CheckCircle,
+  XCircle,
+} from "lucide-react";
+import { MOCK_TRANSACTIONS, Transaction } from "@/lib/mock-data";
 
 export default function HistoryPage() {
-  const [isMounted, setIsMounted] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [mounted, setMounted] = useState(false);
+  const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
 
   useEffect(() => {
-    setIsMounted(true);
+    setMounted(true);
+    setFilteredTransactions(MOCK_TRANSACTIONS);
   }, []);
 
-  const filteredTransactions = MOCK_TRANSACTIONS.filter((tx) => {
-    const matchesSearch = tx.merchant.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         tx.category.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "all" || tx.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  useEffect(() => {
+    if (!mounted) return;
+    
+    let filtered = MOCK_TRANSACTIONS;
 
-  // Safe date formatting to avoid hydration mismatch
-  const formatDate = (dateString: string) => {
-    if (!isMounted) return "";
-    try {
-      return format(new Date(dateString), "MMM d, yyyy");
-    } catch (e) {
-      return dateString;
+    if (searchQuery) {
+      filtered = filtered.filter((txn) =>
+        txn.merchant.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    if (categoryFilter !== "all") {
+      filtered = filtered.filter((txn) => txn.category === categoryFilter);
+    }
+
+    if (statusFilter !== "all") {
+      filtered = filtered.filter((txn) => txn.status === statusFilter);
+    }
+
+    setFilteredTransactions(filtered);
+  }, [searchQuery, categoryFilter, statusFilter, mounted]);
+
+  if (!mounted) {
+    return (
+      <AppLayout>
+        <div className="text-sm text-muted-foreground">Loading transactions...</div>
+      </AppLayout>
+    );
+  }
+
+  const getCategoryColor = (category: string) => {
+    const colors: Record<string, string> = {
+      food_delivery: "bg-orange-100 text-orange-700 border-orange-200",
+      shopping: "bg-blue-100 text-blue-700 border-blue-200",
+      subscriptions: "bg-purple-100 text-purple-700 border-purple-200",
+      entertainment: "bg-pink-100 text-pink-700 border-pink-200",
+      transport: "bg-green-100 text-green-700 border-green-200",
+      other: "bg-slate-100 text-slate-700 border-slate-200",
+    };
+    return colors[category] || colors.other;
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "completed":
+        return <CheckCircle className="w-4 h-4 text-emerald-600" />;
+      case "redirected":
+        return <AlertCircle className="w-4 h-4 text-amber-600" />;
+      case "blocked":
+        return <XCircle className="w-4 h-4 text-red-600" />;
+      case "pending":
+        return <AlertCircle className="w-4 h-4 text-amber-600" />;
     }
   };
 
-  const formatTime = (dateString: string) => {
-    if (!isMounted) return "";
-    try {
-      return format(new Date(dateString), "h:mm a");
-    } catch (e) {
-      return "";
-    }
-  };
+  const totalAmount = filteredTransactions.reduce((sum, txn) => sum + txn.amount, 0);
+  const totalRedirected = filteredTransactions.reduce(
+    (sum, txn) => sum + (txn.redirectedAmount || 0),
+    0
+  );
 
   return (
-    <div className="flex min-h-screen bg-background text-foreground">
-      <Navigation />
-      <main className="flex-1 p-8 space-y-8 max-w-6xl mx-auto">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-primary">Transaction History</h1>
-          <p className="text-muted-foreground">Review your past transactions and NudgeWealth interventions.</p>
+    <AppLayout>
+      <div className="space-y-6">
+        {/* Header Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-600">Total Transactions</p>
+                  <p className="text-2xl font-bold text-slate-900">
+                    {filteredTransactions.length}
+                  </p>
+                </div>
+                <ArrowUpRight className="w-8 h-8 text-slate-400" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-600">Total Spent</p>
+                  <p className="text-2xl font-bold text-red-600">
+                    ₹{totalAmount.toLocaleString("en-IN")}
+                  </p>
+                </div>
+                <ArrowUpRight className="w-8 h-8 text-red-400" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-600">Redirected to Savings</p>
+                  <p className="text-2xl font-bold text-emerald-600">
+                    ₹{totalRedirected.toLocaleString("en-IN")}
+                  </p>
+                </div>
+                <ArrowDownRight className="w-8 h-8 text-emerald-400" />
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-3">
-          <Card className="bg-primary/5 border-primary/20">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-primary" />
-                Discipline Wins
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">12</div>
-              <p className="text-xs text-muted-foreground">Impulse spends avoided this month</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-accent/5 border-accent/20">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <HistoryIcon className="h-4 w-4 text-accent" />
-                Avg. Wait Time
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">4.5h</div>
-              <p className="text-xs text-muted-foreground">Time saved by 'Sleep on it' nudges</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-destructive/5 border-destructive/20">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <Ban className="h-4 w-4 text-destructive" />
-                Hard Blocks
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">3</div>
-              <p className="text-xs text-muted-foreground">Policy violations prevented</p>
-            </CardContent>
-          </Card>
-        </div>
-
+        {/* Filters */}
         <Card>
           <CardHeader>
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div className="space-y-1">
-                <CardTitle>Activities</CardTitle>
-                <CardDescription>A complete log of your financial behavior.</CardDescription>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <div className="relative w-full sm:w-64">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search merchant or category..."
-                    className="pl-8"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-full sm:w-40">
-                    <Filter className="mr-2 h-4 w-4" />
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="blocked">Blocked</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+            <CardTitle>Transaction History</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Merchant</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {!isMounted ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-10">
-                      Loading history...
-                    </TableCell>
-                  </TableRow>
-                ) : filteredTransactions.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">
-                      No transactions found matching your filters.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredTransactions.map((tx) => (
-                    <TableRow key={tx.id}>
-                      <TableCell className="font-medium">
-                        {formatDate(tx.date)}
-                        <div className="text-[10px] text-muted-foreground">
-                          {formatTime(tx.date)}
+            <div className="flex flex-col md:flex-row gap-4 mb-6">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Input
+                  type="text"
+                  placeholder="Search by merchant..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="w-full md:w-48">
+                  <SelectValue placeholder="Category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  <SelectItem value="food_delivery">Food Delivery</SelectItem>
+                  <SelectItem value="shopping">Shopping</SelectItem>
+                  <SelectItem value="subscriptions">Subscriptions</SelectItem>
+                  <SelectItem value="entertainment">Entertainment</SelectItem>
+                  <SelectItem value="transport">Transport</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full md:w-48">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="redirected">Redirected</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="blocked">Blocked</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Transaction List */}
+            <div className="space-y-3">
+              {filteredTransactions.length === 0 ? (
+                <div className="text-center py-12">
+                  <Filter className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                  <p className="text-slate-500">No transactions found</p>
+                </div>
+              ) : (
+                filteredTransactions.map((txn) => (
+                  <div
+                    key={txn.id}
+                    className="flex items-center justify-between p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors"
+                  >
+                    <div className="flex items-center gap-4 flex-1">
+                      <div className="flex items-center justify-center w-10 h-10 bg-white rounded-lg border border-slate-200">
+                        {getStatusIcon(txn.status)}
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="font-medium text-slate-900">{txn.merchant}</p>
+                          {txn.status === "pending" && (
+                            <Badge variant="outline" className="text-xs bg-red-50 text-red-700 border-red-200">
+                              Impulse
+                            </Badge>
+                          )}
                         </div>
-                      </TableCell>
-                      <TableCell>{tx.merchant}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="font-normal">
-                          {tx.category}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className={tx.status === 'blocked' ? 'line-through text-muted-foreground' : ''}>
-                        ₹{tx.amount.toFixed(2)}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {tx.status === 'completed' && <CheckCircle2 className="h-4 w-4 text-primary" />}
-                          {tx.status === 'pending' && <AlertCircle className="h-4 w-4 text-accent" />}
-                          {tx.status === 'blocked' && <Ban className="h-4 w-4 text-destructive" />}
-                          <span className="capitalize">{tx.status}</span>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Badge
+                            variant="outline"
+                            className={`text-xs ${getCategoryColor(txn.category)}`}
+                          >
+                            {txn.category.replace(/_/g, " ")}
+                          </Badge>
+                          <span className="text-sm text-slate-500">
+                            {new Date(txn.date).toLocaleDateString("en-IN", {
+                              year: "numeric",
+                              month: "short",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
                         </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                      </div>
+                    </div>
+
+                    <div className="text-right ml-4">
+                      <p className="font-semibold text-slate-900">
+                        ₹{txn.amount.toLocaleString("en-IN")}
+                      </p>
+                      {txn.redirectedAmount && (
+                        <p className="text-sm text-emerald-600 font-medium">
+                          +₹{txn.redirectedAmount.toLocaleString("en-IN")} saved
+                        </p>
+                      )}
+                      {txn.status === "blocked" && (
+                        <p className="text-sm text-red-600 font-medium">Blocked</p>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </CardContent>
         </Card>
-      </main>
-    </div>
+      </div>
+    </AppLayout>
   );
 }

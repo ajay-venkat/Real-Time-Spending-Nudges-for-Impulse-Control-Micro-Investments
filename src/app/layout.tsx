@@ -2,6 +2,7 @@
 import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
+import { Toaster as SonnerToaster } from 'sonner';
 
 export const metadata: Metadata = {
   title: 'NudgeWealth | Smart Spending & Micro-Investments',
@@ -23,6 +24,7 @@ export default function RootLayout({
       <body className="font-body antialiased bg-background text-foreground">
         {children}
         <Toaster />
+        <SonnerToaster />
       </body>
     </html>
   );
