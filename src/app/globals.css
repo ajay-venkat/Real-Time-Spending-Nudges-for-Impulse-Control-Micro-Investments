@@ -5,52 +5,54 @@
 
 @layer base {
   :root {
-    --background: 129 45% 94%;
-    --foreground: 103 56% 15%;
+    /* Figma Design Tokens - Light Mode */
+    --background: 0 0% 100%; /* #ffffff white */
+    --foreground: 237 97% 7%; /* #030213 dark primary */
     --card: 0 0% 100%;
-    --card-foreground: 103 56% 15%;
+    --card-foreground: 237 97% 7%;
     --popover: 0 0% 100%;
-    --popover-foreground: 103 56% 15%;
-    --primary: 103 56% 29%;
-    --primary-foreground: 129 45% 98%;
-    --secondary: 103 20% 90%;
-    --secondary-foreground: 103 56% 29%;
-    --muted: 103 10% 92%;
-    --muted-foreground: 103 20% 40%;
-    --accent: 42 100% 50%;
-    --accent-foreground: 103 56% 10%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 103 20% 85%;
-    --input: 103 20% 85%;
-    --ring: 103 56% 29%;
-    --chart-1: 103 56% 29%;
-    --chart-2: 42 100% 50%;
-    --chart-3: 173 58% 39%;
+    --popover-foreground: 237 97% 7%;
+    --primary: 237 97% 7%; /* #030213 dark primary */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 5% 93%; /* #ececf0 muted light */
+    --secondary-foreground: 237 97% 7%;
+    --muted: 240 5% 93%; /* #ececf0 */
+    --muted-foreground: 240 6% 47%; /* #717182 */
+    --accent: 240 5% 93%;
+    --accent-foreground: 237 97% 7%;
+    --destructive: 347 75% 47%; /* #d4183d */
+    --destructive-foreground: 0 0% 100%;
+    --border: 240 5% 93%;
+    --input: 240 5% 93%;
+    --ring: 237 97% 7%;
+    --chart-1: 237 97% 7%;
+    --chart-2: 347 75% 47%;
+    --chart-3: 142 76% 36%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
-    --radius: 0.75rem;
+    --radius: 0.625rem;
   }
   .dark {
-    --background: 103 56% 5%;
-    --foreground: 129 45% 95%;
-    --card: 103 56% 8%;
-    --card-foreground: 129 45% 95%;
-    --popover: 103 56% 8%;
-    --popover-foreground: 129 45% 95%;
-    --primary: 103 56% 35%;
-    --primary-foreground: 129 45% 98%;
-    --secondary: 103 30% 15%;
-    --secondary-foreground: 103 56% 40%;
-    --muted: 103 30% 15%;
-    --muted-foreground: 103 20% 60%;
-    --accent: 42 100% 50%;
-    --accent-foreground: 103 56% 10%;
-    --destructive: 0 62.8% 30.6%;
+    /* Figma Design Tokens - Dark Mode */
+    --background: 237 97% 7%;
+    --foreground: 0 0% 98%;
+    --card: 237 90% 10%;
+    --card-foreground: 0 0% 98%;
+    --popover: 237 90% 10%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 237 97% 7%;
+    --secondary: 240 5% 20%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 5% 20%;
+    --muted-foreground: 240 6% 60%;
+    --accent: 240 5% 20%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 347 75% 47%;
     --destructive-foreground: 0 0% 98%;
-    --border: 103 30% 20%;
-    --input: 103 30% 20%;
-    --ring: 103 56% 35%;
+    --border: 240 5% 20%;
+    --input: 240 5% 20%;
+    --ring: 0 0% 98%;
   }
 }
 

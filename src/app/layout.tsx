@@ -2,6 +2,7 @@
 import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
+import { SidebarLayout } from '@/components/SidebarLayout';
 
 export const metadata: Metadata = {
   title: 'NudgeWealth | Smart Spending & Micro-Investments',
@@ -21,7 +22,9 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased bg-background text-foreground">
-        {children}
+        <SidebarLayout>
+          {children}
+        </SidebarLayout>
         <Toaster />
       </body>
     </html>
