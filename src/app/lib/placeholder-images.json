@@ -1,0 +1,17 @@
+
+{
+  "placeholderImages": [
+    {
+      "id": "hero-finance",
+      "description": "Financial growth illustration",
+      "imageUrl": "https://picsum.photos/seed/wealth1/1200/600",
+      "imageHint": "finance growth"
+    },
+    {
+      "id": "user-avatar",
+      "description": "Default user avatar",
+      "imageUrl": "https://picsum.photos/seed/user1/100/100",
+      "imageHint": "profile avatar"
+    }
+  ]
+}

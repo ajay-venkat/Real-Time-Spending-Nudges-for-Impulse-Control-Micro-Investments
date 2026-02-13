@@ -1,0 +1,49 @@
+
+{
+  "entities": {
+    "SpendingGoal": {
+      "title": "Spending Goal",
+      "description": "A user-defined limit for a specific spending category.",
+      "type": "object",
+      "properties": {
+        "category": {
+          "type": "string",
+          "description": "The category name (e.g., Food, Shopping)."
+        },
+        "limit": {
+          "type": "number",
+          "description": "The maximum amount intended to spend."
+        },
+        "current": {
+          "type": "number",
+          "description": "The current amount spent in this category."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who owns this goal."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "category",
+        "limit",
+        "current",
+        "userId"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "google.com"
+    ]
+  },
+  "firestore": {
+    "/goals/{goalId}": {
+      "schema": "SpendingGoal",
+      "description": "Collection of user spending goals."
+    }
+  }
+}
