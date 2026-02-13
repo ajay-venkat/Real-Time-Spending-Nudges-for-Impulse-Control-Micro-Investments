@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,13 +26,17 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Plus, Settings2, Trash2, Clock, TrendingUp, Bell } from "lucide-react";
-import { MOCK_RULES, SpendingRule } from "@/lib/mock-data";
+import { SpendingRule, SpendingRuleWithId } from "@/lib/mock-data";
+import { db } from "@/lib/local-storage";
+import { calculateCategorySpending } from "@/lib/transaction-engine";
 import { toast } from "sonner";
 
+type SpendingRuleForm = SpendingRule;
+
 export default function RulesPage() {
-  const [rules, setRules] = useState<SpendingRule[]>(MOCK_RULES);
+  const [rules, setRules] = useState<SpendingRuleWithId[]>([]);
   const [isAddingRule, setIsAddingRule] = useState(false);
-  const [editingRule, setEditingRule] = useState<SpendingRule | null>(null);
+  const [editingRule, setEditingRule] = useState<SpendingRuleWithId | null>(null);
 
   const [formData, setFormData] = useState({
     category: "",
@@ -42,17 +46,47 @@ export default function RulesPage() {
     timeLockRange: { start: 22, end: 6 },
   });
 
-  const handleToggleRule = (category: string) => {
-    setRules(
-      rules.map((rule) =>
-        rule.category === category ? { ...rule, timeLockEnabled: !rule.timeLockEnabled } : rule
-      )
-    );
-    toast.success("Rule updated successfully");
+  // Load rules from localStorage on mount
+  useEffect(() => {
+    const loadRules = () => {
+      const storedRules = db.getCollection('rules') as SpendingRuleWithId[];
+      // Update current spending for each rule
+      const updatedRules = storedRules.map(rule => ({
+        ...rule,
+        current: calculateCategorySpending(rule.category)
+      }));
+      setRules(updatedRules);
+    };
+
+    loadRules();
+
+    // Listen for storage changes
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key?.includes('nudgewealth_rules') || e.key?.includes('nudgewealth_transactions')) {
+        loadRules();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  const handleToggleRule = (id: string) => {
+    const rule = rules.find(r => r.id === id);
+    if (rule) {
+      db.updateDoc('rules', id, { timeLockEnabled: !rule.timeLockEnabled });
+      setRules(
+        rules.map((r) =>
+          r.id === id ? { ...r, timeLockEnabled: !r.timeLockEnabled } : r
+        )
+      );
+      toast.success("Rule updated successfully");
+    }
   };
 
-  const handleDeleteRule = (category: string) => {
-    setRules(rules.filter((rule) => rule.category !== category));
+  const handleDeleteRule = (id: string) => {
+    db.deleteDoc('rules', id);
+    setRules(rules.filter((rule) => rule.id !== id));
     toast.success("Rule deleted successfully");
   };
 
@@ -62,19 +96,22 @@ export default function RulesPage() {
       return;
     }
 
-    const newRule: SpendingRule = {
+    const currentSpending = calculateCategorySpending(formData.category);
+    const newRule = {
       category: formData.category,
       limit: parseFloat(formData.limit),
-      current: parseFloat(formData.current),
+      current: currentSpending,
       timeLockEnabled: formData.timeLockEnabled,
-      timeLockRange: formData.timeLockRange,
+      timeLockRange: [formData.timeLockRange.start, formData.timeLockRange.end] as [number, number],
     };
 
     if (editingRule) {
-      setRules(rules.map((rule) => (rule.category === editingRule.category ? newRule : rule)));
+      db.updateDoc('rules', editingRule.id, newRule);
+      setRules(rules.map((rule) => (rule.id === editingRule.id ? { ...newRule, id: editingRule.id } : rule)));
       toast.success("Rule updated successfully");
     } else {
-      setRules([...rules, newRule]);
+      const docId = db.addDoc('rules', newRule);
+      setRules([...rules, { ...newRule, id: docId }]);
       toast.success("Rule created successfully");
     }
 
@@ -89,14 +126,14 @@ export default function RulesPage() {
     });
   };
 
-  const handleEditRule = (rule: SpendingRule) => {
+  const handleEditRule = (rule: SpendingRuleWithId) => {
     setEditingRule(rule);
     setFormData({
       category: rule.category,
       limit: rule.limit.toString(),
       current: rule.current.toString(),
       timeLockEnabled: rule.timeLockEnabled,
-      timeLockRange: rule.timeLockRange,
+      timeLockRange: { start: rule.timeLockRange[0], end: rule.timeLockRange[1] },
     });
     setIsAddingRule(true);
   };
@@ -254,7 +291,7 @@ export default function RulesPage() {
                     <div className="flex items-center gap-2 ml-4">
                       <Switch
                         checked={rule.timeLockEnabled}
-                        onCheckedChange={() => handleToggleRule(rule.category)}
+                        onCheckedChange={() => handleToggleRule(rule.id)}
                       />
                       <Button
                         variant="ghost"
@@ -266,7 +303,7 @@ export default function RulesPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => handleDeleteRule(rule.category)}
+                        onClick={() => handleDeleteRule(rule.id)}
                         className="text-red-600 hover:text-red-700 hover:bg-red-50"
                       >
                         <Trash2 className="w-4 h-4" />

@@ -33,13 +33,43 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { MOCK_TRANSACTIONS, MOCK_RULES } from "@/lib/mock-data";
+import { Transaction, SpendingRuleWithId } from "@/lib/mock-data";
+import { db } from "@/lib/local-storage";
+import { calculateCategorySpending } from "@/lib/transaction-engine";
 
 export default function DashboardPage() {
   const [mounted, setMounted] = useState(false);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [rules, setRules] = useState<SpendingRuleWithId[]>([]);
 
   useEffect(() => {
     setMounted(true);
+    
+    const loadData = () => {
+      // Load transactions from localStorage
+      const storedTransactions = db.getCollection('transactions') as Transaction[];
+      setTransactions(storedTransactions);
+
+      // Load rules from localStorage and update current spending
+      const storedRules = db.getCollection('rules') as SpendingRuleWithId[];
+      const updatedRules = storedRules.map(rule => ({
+        ...rule,
+        current: calculateCategorySpending(rule.category)
+      }));
+      setRules(updatedRules);
+    };
+
+    loadData();
+
+    // Listen for storage changes
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key?.includes('nudgewealth_')) {
+        loadData();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   if (!mounted) {
@@ -51,7 +81,7 @@ export default function DashboardPage() {
   }
 
   // Calculate spending by category
-  const categorySpending = MOCK_TRANSACTIONS.reduce((acc, txn) => {
+  const categorySpending = transactions.reduce((acc, txn) => {
     const category = txn.category.replace(/_/g, " ");
     acc[category] = (acc[category] || 0) + txn.amount;
     return acc;
@@ -70,7 +100,7 @@ export default function DashboardPage() {
   });
 
   const dailySpending = last14Days.map((date) => {
-    const dayTransactions = MOCK_TRANSACTIONS.filter(
+    const dayTransactions = transactions.filter(
       (txn) => new Date(txn.date).toISOString().split("T")[0] === date
     );
     const spending = dayTransactions.reduce((sum, txn) => sum + txn.amount, 0);
@@ -85,13 +115,13 @@ export default function DashboardPage() {
     };
   });
 
-  const totalSpending = MOCK_TRANSACTIONS.reduce((sum, txn) => sum + txn.amount, 0);
-  const totalSaved = MOCK_TRANSACTIONS.reduce(
+  const totalSpending = transactions.reduce((sum, txn) => sum + txn.amount, 0);
+  const totalSaved = transactions.reduce(
     (sum, txn) => sum + (txn.redirectedAmount || 0),
     0
   );
-  const impulsiveTransactions = MOCK_TRANSACTIONS.filter((txn) => txn.status === "pending").length;
-  const blockedAmount = MOCK_TRANSACTIONS
+  const impulsiveTransactions = transactions.filter((txn) => txn.status === "pending").length;
+  const blockedAmount = transactions
     .filter((txn) => txn.status === "blocked")
     .reduce((sum, txn) => sum + txn.amount, 0);
 
@@ -104,7 +134,7 @@ export default function DashboardPage() {
   };
 
   // Check for alerts
-  const alerts = MOCK_RULES.map((rule) => {
+  const alerts = rules.map((rule) => {
     const percentage = (rule.current / rule.limit) * 100;
     if (percentage >= 90) {
       return {
@@ -203,13 +233,15 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-slate-900">
-                {Math.floor((MOCK_TRANSACTIONS.filter((t) => t.status !== "completed").length /
-                  MOCK_TRANSACTIONS.length) *
-                  100)}
+                {transactions.length > 0 
+                  ? Math.floor((transactions.filter((t) => t.status !== "completed").length /
+                      transactions.length) *
+                      100)
+                  : 0}
                 %
               </div>
               <p className="text-xs text-slate-500 mt-1">
-                {MOCK_TRANSACTIONS.filter((t) => t.status !== "completed").length} transactions
+                {transactions.filter((t) => t.status !== "completed").length} transactions
                 influenced
               </p>
             </CardContent>
@@ -311,7 +343,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {MOCK_RULES.map((rule) => {
+              {rules.map((rule) => {
                 const percentage = Math.min((rule.current / rule.limit) * 100, 100);
                 const Icon = categoryIcons[rule.category] || Zap;
 
@@ -356,7 +388,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {MOCK_TRANSACTIONS.slice(0, 5).map((txn) => (
+              {transactions.slice(0, 5).map((txn) => (
                 <div
                   key={txn.id}
                   className="flex items-center justify-between py-3 border-b border-slate-100 last:border-0"

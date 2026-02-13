@@ -22,10 +22,12 @@ import {
   CheckCircle,
   XCircle,
 } from "lucide-react";
-import { MOCK_TRANSACTIONS, Transaction } from "@/lib/mock-data";
+import { Transaction } from "@/lib/mock-data";
+import { db } from "@/lib/local-storage";
 
 export default function HistoryPage() {
   const [mounted, setMounted] = useState(false);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -33,13 +35,30 @@ export default function HistoryPage() {
 
   useEffect(() => {
     setMounted(true);
-    setFilteredTransactions(MOCK_TRANSACTIONS);
+    
+    const loadTransactions = () => {
+      const storedTransactions = db.getCollection('transactions') as Transaction[];
+      setTransactions(storedTransactions);
+      setFilteredTransactions(storedTransactions);
+    };
+
+    loadTransactions();
+
+    // Listen for storage changes
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key?.includes('nudgewealth_transactions')) {
+        loadTransactions();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   useEffect(() => {
     if (!mounted) return;
     
-    let filtered = MOCK_TRANSACTIONS;
+    let filtered = transactions;
 
     if (searchQuery) {
       filtered = filtered.filter((txn) =>
@@ -56,7 +75,7 @@ export default function HistoryPage() {
     }
 
     setFilteredTransactions(filtered);
-  }, [searchQuery, categoryFilter, statusFilter, mounted]);
+  }, [searchQuery, categoryFilter, statusFilter, mounted, transactions]);
 
   if (!mounted) {
     return (
