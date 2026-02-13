@@ -2,10 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { useFirestore } from "@/firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { errorEmitter } from "@/firebase/error-emitter";
-import { FirestorePermissionError } from "@/firebase/errors";
+import { db } from "@/lib/local-storage";
 import {
   Dialog,
   DialogContent,
@@ -32,11 +29,9 @@ const CATEGORIES = ["Food Delivery", "Shopping", "Entertainment", "Transport", "
 
 export function AddGoalDialog() {
   const [open, setOpen] = useState(false);
-  const firestore = useFirestore();
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!firestore) return;
 
     const formData = new FormData(e.currentTarget);
     const category = formData.get("category") as string;
@@ -46,28 +41,27 @@ export function AddGoalDialog() {
       category,
       limit,
       current: 0,
-      userId: "aditya_kumar_mock", 
-      createdAt: serverTimestamp(),
+      userId: "demo-user-001", 
+      createdAt: new Date().toISOString(),
     };
 
-    const goalsRef = collection(firestore, "goals");
+    try {
+      // Add to localStorage via our database abstraction
+      db.addDoc("goals", goalData);
 
-    // Optimistically close the dialog and show success
-    setOpen(false);
-    toast({
-      title: "Goal added",
-      description: `Your ${category} goal has been created.`,
-    });
-
-    // Initiate the write without awaiting it
-    addDoc(goalsRef, goalData).catch(async (error) => {
-      const permissionError = new FirestorePermissionError({
-        path: goalsRef.path,
-        operation: "create",
-        requestResourceData: goalData,
+      // Close dialog and show success
+      setOpen(false);
+      toast({
+        title: "Goal added",
+        description: `Your ${category} goal has been created.`,
       });
-      errorEmitter.emit("permission-error", permissionError);
-    });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to add goal. Please try again.",
+      });
+    }
   };
 
   return (

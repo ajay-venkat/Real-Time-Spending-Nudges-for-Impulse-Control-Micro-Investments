@@ -1,15 +1,8 @@
-'use server';
+'use client';
 
-import fs from 'fs';
-import path from 'path';
+import { MOCK_TRANSACTIONS, MOCK_RULES, MOCK_INVESTMENT_OPTIONS } from './mock-data';
 
-const DATA_DIR = path.join(process.cwd(), 'data');
-
-export function ensureDataDir() {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-  }
-}
+const KEY_PREFIX = 'nudgewealth_';
 
 export type DocumentData = Record<string, any>;
 
@@ -17,7 +10,10 @@ export class LocalDatabase {
   private static instance: LocalDatabase;
 
   private constructor() {
-    ensureDataDir();
+    // Auto-seed data on first initialization
+    if (typeof window !== 'undefined') {
+      this.seedDataIfEmpty();
+    }
   }
 
   static getInstance(): LocalDatabase {
@@ -27,11 +23,53 @@ export class LocalDatabase {
     return LocalDatabase.instance;
   }
 
+  private seedDataIfEmpty(): void {
+    // Seed transactions
+    if (!this.hasCollection('transactions')) {
+      localStorage.setItem(
+        `${KEY_PREFIX}transactions`,
+        JSON.stringify(MOCK_TRANSACTIONS)
+      );
+    }
+
+    // Seed rules
+    if (!this.hasCollection('rules')) {
+      const rulesWithIds = MOCK_RULES.map((rule, index) => ({
+        ...rule,
+        id: `rule-${index + 1}`,
+      }));
+      localStorage.setItem(
+        `${KEY_PREFIX}rules`,
+        JSON.stringify(rulesWithIds)
+      );
+    }
+
+    // Seed investment options
+    if (!this.hasCollection('investment_options')) {
+      const optionsWithIds = MOCK_INVESTMENT_OPTIONS.map((option, index) => ({
+        ...option,
+        id: `investment-${index + 1}`,
+      }));
+      localStorage.setItem(
+        `${KEY_PREFIX}investment_options`,
+        JSON.stringify(optionsWithIds)
+      );
+    }
+  }
+
+  private hasCollection(collectionName: string): boolean {
+    if (typeof window === 'undefined') return false;
+    const key = `${KEY_PREFIX}${collectionName}`;
+    return localStorage.getItem(key) !== null;
+  }
+
   getCollection(collectionName: string): DocumentData[] {
-    const filePath = path.join(DATA_DIR, `${collectionName}.json`);
+    if (typeof window === 'undefined') return [];
+    
     try {
-      if (fs.existsSync(filePath)) {
-        const data = fs.readFileSync(filePath, 'utf-8');
+      const key = `${KEY_PREFIX}${collectionName}`;
+      const data = localStorage.getItem(key);
+      if (data) {
         return JSON.parse(data);
       }
     } catch (error) {
@@ -85,20 +123,30 @@ export class LocalDatabase {
   }
 
   private saveCollection(collectionName: string, data: DocumentData[]): void {
-    const filePath = path.join(DATA_DIR, `${collectionName}.json`);
+    if (typeof window === 'undefined') return;
+    
     try {
-      fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+      const key = `${KEY_PREFIX}${collectionName}`;
+      localStorage.setItem(key, JSON.stringify(data));
+      
+      // Trigger storage event to notify other components
+      window.dispatchEvent(new StorageEvent('storage', {
+        key,
+        newValue: JSON.stringify(data),
+      }));
     } catch (error) {
       console.error(`Error saving collection ${collectionName}:`, error);
     }
   }
 
   clearAll(): void {
+    if (typeof window === 'undefined') return;
+    
     try {
-      const files = fs.readdirSync(DATA_DIR);
-      files.forEach((file) => {
-        if (file.endsWith('.json')) {
-          fs.unlinkSync(path.join(DATA_DIR, file));
+      const keys = Object.keys(localStorage);
+      keys.forEach((key) => {
+        if (key.startsWith(KEY_PREFIX)) {
+          localStorage.removeItem(key);
         }
       });
     } catch (error) {
