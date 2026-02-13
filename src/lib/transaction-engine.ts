@@ -1,7 +1,7 @@
 'use client';
 
 import { db } from './local-storage';
-import { Transaction, SpendingRuleWithId } from './mock-data';
+import { Transaction, SpendingRuleWithId, MOCK_INVESTMENT_OPTIONS } from './mock-data';
 import { personalizedSpendingNudges } from '@/ai/flows/personalized-spending-nudges';
 import { intelligentMicroInvestmentRedirect } from '@/ai/flows/intelligent-micro-investment-redirect-flow';
 
@@ -74,11 +74,9 @@ export async function processTransaction(transaction: Transaction): Promise<Tran
     try {
       const recommendation = await intelligentMicroInvestmentRedirect({
         excessAmount: transaction.amount,
-        spendingCategory: transaction.category,
-        userProfile: {
-          riskTolerance: 'medium',
-          financialGoals: ['Emergency Fund', 'Long-term Growth'],
-        },
+        userFinancialGoals: 'Build emergency fund and start long-term equity exposure',
+        currentMarketConditions: 'Stable with moderate growth potential',
+        availableInvestmentOptions: MOCK_INVESTMENT_OPTIONS,
       });
       transaction.nudgeMessage = `Transaction blocked due to time lock. ${recommendation.recommendedAction}`;
     } catch (error) {
@@ -102,11 +100,9 @@ export async function processTransaction(transaction: Transaction): Promise<Tran
     try {
       const recommendation = await intelligentMicroInvestmentRedirect({
         excessAmount,
-        spendingCategory: transaction.category,
-        userProfile: {
-          riskTolerance: 'medium',
-          financialGoals: ['Emergency Fund', 'Long-term Growth'],
-        },
+        userFinancialGoals: 'Build emergency fund and start long-term equity exposure',
+        currentMarketConditions: 'Stable with moderate growth potential',
+        availableInvestmentOptions: MOCK_INVESTMENT_OPTIONS,
       });
       transaction.nudgeMessage = `Spending limit exceeded. ${recommendation.recommendedAction}`;
     } catch (error) {
@@ -123,19 +119,16 @@ export async function processTransaction(transaction: Transaction): Promise<Tran
     transaction.status = 'pending';
 
     try {
-      const recentTransactions = db.getCollection('transactions') as Transaction[];
       const nudge = await personalizedSpendingNudges({
+        currentSpending,
+        spendingLimit: rule.limit,
         transactionAmount: transaction.amount,
-        category: transaction.category,
-        currentSpending: currentSpending,
-        limit: rule.limit,
-        recentTransactions: recentTransactions
-          .slice(-5)
-          .map((t) => ({
-            category: t.category,
-            amount: t.amount,
-            merchant: t.merchant,
-          })),
+        transactionCategory: transaction.category,
+        investmentOpportunities: MOCK_INVESTMENT_OPTIONS.map(o => ({
+          name: o.name,
+          description: o.description,
+          potentialReturn: o.expectedReturn,
+        })),
       });
       transaction.nudgeMessage = nudge.nudgeMessage;
     } catch (error) {
@@ -169,4 +162,26 @@ export function updateRulesWithCurrentSpending(): void {
       updateRuleSpending(rule.id, currentSpending);
     }
   });
+}
+
+/**
+ * Convenience function to create and process a new transaction
+ * @param data Transaction data (category, amount, merchant)
+ * @returns The processed transaction with updated status and amounts
+ */
+export async function addNewTransaction(data: {
+  category: string;
+  amount: number;
+  merchant: string;
+}): Promise<Transaction> {
+  const transaction: Transaction = {
+    id: '',
+    category: data.category,
+    amount: data.amount,
+    merchant: data.merchant,
+    date: new Date().toISOString(),
+    status: 'pending',
+  };
+  
+  return processTransaction(transaction);
 }
