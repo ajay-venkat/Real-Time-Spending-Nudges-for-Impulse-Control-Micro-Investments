@@ -127,12 +127,15 @@ export class LocalDatabase {
     
     try {
       const key = `${KEY_PREFIX}${collectionName}`;
-      localStorage.setItem(key, JSON.stringify(data));
+      const value = JSON.stringify(data);
+      localStorage.setItem(key, value);
       
-      // Trigger storage event to notify other components
+      // Trigger storage event to notify components in the same and other tabs
       window.dispatchEvent(new StorageEvent('storage', {
         key,
-        newValue: JSON.stringify(data),
+        newValue: value,
+        url: window.location.href,
+        storageArea: localStorage,
       }));
     } catch (error) {
       console.error(`Error saving collection ${collectionName}:`, error);
@@ -143,12 +146,13 @@ export class LocalDatabase {
     if (typeof window === 'undefined') return;
     
     try {
-      const keys = Object.keys(localStorage);
-      keys.forEach((key) => {
-        if (key.startsWith(KEY_PREFIX)) {
+      // Iterate backwards to avoid index shifting during removal
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (key?.startsWith(KEY_PREFIX)) {
           localStorage.removeItem(key);
         }
-      });
+      }
     } catch (error) {
       console.error('Error clearing data:', error);
     }

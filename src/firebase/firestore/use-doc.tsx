@@ -27,7 +27,9 @@ export function useDoc<T = DocumentData>(
       setLoading(false);
     }
 
-    // Listen for storage events (updates from other tabs/components)
+    // Listen for storage events
+    // Note: This custom event (dispatched in saveCollection) works within the same tab.
+    // Native storage events only fire in other tabs/windows.
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === `nudgewealth_${collectionName}` && e.newValue) {
         try {
