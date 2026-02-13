@@ -6,6 +6,8 @@ export interface Transaction {
   merchant: string;
   date: string;
   status: 'completed' | 'pending' | 'blocked';
+  redirectedAmount?: number;
+  nudgeMessage?: string;
 }
 
 export interface SpendingRule {
@@ -17,16 +19,16 @@ export interface SpendingRule {
 }
 
 export const MOCK_TRANSACTIONS: Transaction[] = [
-  { id: '1', category: 'Food Delivery', amount: 450, merchant: 'Swiggy', date: '2025-02-13T10:00:00.000Z', status: 'completed' },
-  { id: '2', category: 'Shopping', amount: 2500, merchant: 'Amazon', date: '2025-02-12T15:30:00.000Z', status: 'completed' },
-  { id: '3', category: 'Entertainment', amount: 999, merchant: 'Netflix', date: '2025-02-11T20:15:00.000Z', status: 'completed' },
-  { id: '4', category: 'Food Delivery', amount: 120, merchant: 'Zomato', date: '2025-02-11T12:00:00.000Z', status: 'completed' },
-  { id: '5', category: 'Transport', amount: 350, merchant: 'Uber', date: '2025-02-10T09:45:00.000Z', status: 'completed' },
-  { id: '6', category: 'Food Delivery', amount: 850, merchant: 'Zomato', date: '2025-02-14T23:30:00.000Z', status: 'blocked' },
-  { id: '7', category: 'Shopping', amount: 4500, merchant: 'Myntra', date: '2025-02-14T22:15:00.000Z', status: 'blocked' },
-  { id: '8', category: 'Transport', amount: 150, merchant: 'Ola', date: '2025-02-09T08:00:00.000Z', status: 'completed' },
-  { id: '9', category: 'Food Delivery', amount: 300, merchant: 'Blinkit', date: '2025-02-08T18:00:00.000Z', status: 'completed' },
-  { id: '10', category: 'Entertainment', amount: 500, merchant: 'PVR Cinemas', date: '2025-02-07T14:00:00.000Z', status: 'completed' },
+  { id: '1', category: 'Food Delivery', amount: 450, merchant: 'Swiggy', date: new Date(Date.now() - 1 * 86400000).toISOString(), status: 'completed' },
+  { id: '2', category: 'Shopping', amount: 2500, merchant: 'Amazon', date: new Date(Date.now() - 2 * 86400000).toISOString(), status: 'completed' },
+  { id: '3', category: 'Entertainment', amount: 999, merchant: 'Netflix', date: new Date(Date.now() - 3 * 86400000).toISOString(), status: 'completed' },
+  { id: '4', category: 'Food Delivery', amount: 120, merchant: 'Zomato', date: new Date(Date.now() - 3 * 86400000).toISOString(), status: 'completed' },
+  { id: '5', category: 'Transport', amount: 350, merchant: 'Uber', date: new Date(Date.now() - 4 * 86400000).toISOString(), status: 'completed' },
+  { id: '6', category: 'Food Delivery', amount: 850, merchant: 'Zomato', date: new Date(Date.now() - 0 * 86400000).toISOString(), status: 'blocked', redirectedAmount: 850 },
+  { id: '7', category: 'Shopping', amount: 4500, merchant: 'Myntra', date: new Date(Date.now() - 0 * 86400000).toISOString(), status: 'blocked', redirectedAmount: 2000 },
+  { id: '8', category: 'Transport', amount: 150, merchant: 'Ola', date: new Date(Date.now() - 5 * 86400000).toISOString(), status: 'completed' },
+  { id: '9', category: 'Food Delivery', amount: 300, merchant: 'Blinkit', date: new Date(Date.now() - 6 * 86400000).toISOString(), status: 'completed' },
+  { id: '10', category: 'Entertainment', amount: 500, merchant: 'PVR Cinemas', date: new Date(Date.now() - 7 * 86400000).toISOString(), status: 'completed' },
 ];
 
 export const MOCK_RULES: SpendingRule[] = [
